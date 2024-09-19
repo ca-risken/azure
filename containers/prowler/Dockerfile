@@ -11,15 +11,6 @@ FROM public.ecr.aws/risken/base/risken-base:v0.0.1 AS risken-base
 FROM python:3.9.20-alpine3.20
 COPY --from=builder /go/bin/prowler /usr/local/prowler/bin/
 COPY --from=risken-base /usr/local/bin/env-injector /usr/local/bin/
-ARG PROWLER_COMMIT_HASH=ea4bf5b484b3d39ebf3f6b91e9df61df1dc4643f
-# RUN apk add --no-cache ca-certificates tzdata git \
-#     && mkdir -p /opt/prowler \
-#     && cd /opt/prowler \
-#     && git init \
-#     && git remote add origin https://github.com/prowler-cloud/prowler.git \
-#     && git fetch origin ${PROWLER_COMMIT_HASH} --depth 1 \
-#     && git checkout FETCH_HEAD
-# RUN pip install --no-cache-dir -r /opt/prowler/requirements.txt
 RUN pip install prowler==4.3.5
 ENV DEBUG= \
     PROFILE_EXPORTER= \
@@ -35,7 +26,7 @@ ENV DEBUG= \
     WAIT_TIME_SECOND=20 \
     CORE_SVC_ADDR= \
     DATA_SOURCE_API_SVC_ADDR= \
-    PROWLER_COMMAND="prowler" \
+    ProwlerCommand="prowler" \
     AZURE_CLIENT_ID= \
     AZURE_CLIENT_SECRET= \
     AZURE_TENANT_ID= \

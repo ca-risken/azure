@@ -20,9 +20,9 @@ type prowlerFinding struct {
 	Resources    []prowlerResource  `json:"resources"`
 	Remediation  prowlerRemediation `json:"remediation"`
 	StatusDetail string             `json:"status_detail"`
-	Severity     string             `json:"severity,omitempty"`
-	StatusCode   string             `json:"status_code,omitempty"`
-	Tags         []string           `json:"tags,omitempty"`
+	Severity     string             `json:"severity"`
+	StatusCode   string             `json:"status_code"`
+	Tags         *[]string          `json:"tags,omitempty"`
 }
 
 type prowlerMetadata struct {
@@ -51,22 +51,29 @@ type prowlerRemediation struct {
 	References []string `json:"references"`
 }
 
-func (s *SqsHandler) makeFindingBatchForUpsert(ctx context.Context, projectID uint32, subscriptionID string, prowlerFindings *[]prowlerFinding) ([]*finding.ResourceBatchForUpsert, []*finding.FindingBatchForUpsert, error) {
+func (s *SqsHandler) makeFindingBatchForUpsert(ctx context.Context, projectID uint32, subscriptionID string, prowlerFindings *[]prowlerFinding) error {
 	var resourceBatch []*finding.ResourceBatchForUpsert
 	var findingBatch []*finding.FindingBatchForUpsert
 	for _, pf := range *prowlerFindings {
-		r, f, err := s.makeFinding(ctx, projectID, subscriptionID, &pf)
-		if err != nil {
-			return nil, nil, err
+		resourceUID := s.getResourceUID(ctx, pf)
+		if resourceUID == "" {
+			s.logger.Warnf(ctx, "Resource UID is empty, project_id=%d, subscription_id=%s, pf=%+v", projectID, subscriptionID, pf)
+			continue
 		}
-		if r != nil {
-			resourceBatch = append(resourceBatch, r)
+		groupName := s.getResourceGroupName(ctx, pf)
+		score := pf.getScore(groupName)
+		if score == 0.0 {
+			resourceBatch = append(resourceBatch, makeResource(projectID, resourceUID, subscriptionID, groupName))
+		}
+		f, err := s.makeFinding(ctx, projectID, subscriptionID, resourceUID, groupName, score, &pf)
+		if err != nil {
+			return err
 		}
 		if f != nil {
 			findingBatch = append(findingBatch, f)
 		}
 	}
-	return resourceBatch, findingBatch, nil
+	return s.putFindings(ctx, projectID, resourceBatch, findingBatch)
 }
 
 func (s *SqsHandler) putFindings(ctx context.Context, projectID uint32, resourceBatch []*finding.ResourceBatchForUpsert, findingBatch []*finding.FindingBatchForUpsert) error {
@@ -85,35 +92,29 @@ func (s *SqsHandler) putFindings(ctx context.Context, projectID uint32, resource
 	return nil
 }
 
-func (s *SqsHandler) makeFinding(ctx context.Context, projectID uint32, subscriptionID string, pf *prowlerFinding) (*finding.ResourceBatchForUpsert, *finding.FindingBatchForUpsert, error) {
-	resourceUID := s.getResourceUID(ctx, *pf)
-	if resourceUID == "" {
-		s.logger.Warnf(ctx, "Resource UID is empty, project_id=%d, subscription_id=%s, pf=%+v", projectID, subscriptionID, pf)
+func makeResource(projectID uint32, resourceUID, subscriptionID, groupName string) *finding.ResourceBatchForUpsert {
+	// PutResource
+	r := &finding.ResourceBatchForUpsert{
+		Resource: &finding.ResourceForUpsert{
+			ResourceName: resourceUID,
+			ProjectId:    projectID,
+		},
 	}
-	region := s.getResourceRegion(ctx, *pf)
-	groupName := s.getResourceGroupName(ctx, *pf)
-	score := pf.getScore(groupName)
-	if score == 0.0 {
-		// PutResource
-		r := &finding.ResourceBatchForUpsert{
-			Resource: &finding.ResourceForUpsert{
-				ResourceName: resourceUID,
-				ProjectId:    projectID,
-			},
-		}
-		tags := []*finding.ResourceTagForBatch{
-			{Tag: common.TagAzure},
-			{Tag: subscriptionID},
-			{Tag: strings.ToLower(groupName)},
-		}
-		r.Tag = tags
-		return r, nil, nil
+	tags := []*finding.ResourceTagForBatch{
+		{Tag: common.TagAzure},
+		{Tag: subscriptionID},
+		{Tag: strings.ToLower(groupName)},
 	}
+	r.Tag = tags
+	return r
+}
 
+func (s *SqsHandler) makeFinding(ctx context.Context, projectID uint32, subscriptionID, resourceUID, groupName string, score float32, pf *prowlerFinding) (*finding.FindingBatchForUpsert, error) {
+	region := s.getResourceRegion(ctx, *pf)
 	buf, err := json.Marshal(pf)
 	if err != nil {
 		s.logger.Errorf(ctx, "Failed to marshal user data, project_id=%d, resource=%s, err=%+v", projectID, resourceUID, err)
-		return nil, nil, err
+		return nil, err
 	}
 	dataSourceID := generateDataSourceID(subscriptionID, pf.Metadata.EventCode, region, resourceUID)
 	f := &finding.FindingBatchForUpsert{
@@ -138,7 +139,7 @@ func (s *SqsHandler) makeFinding(ctx context.Context, projectID uint32, subscrip
 	f.Tag = tags
 	f.Recommend = s.getRecommend(ctx, pf, groupName)
 
-	return nil, f, nil
+	return f, nil
 }
 
 func shorten(s string, n int) string {
@@ -150,7 +151,7 @@ func shorten(s string, n int) string {
 
 func (s *SqsHandler) getRecommend(ctx context.Context, pf *prowlerFinding, resourceGroup string) *finding.RecommendForBatch {
 	event := pf.Metadata.EventCode
-	pluginMetadata := pluginMap[fmt.Sprintf("%s/%s", resourceGroup, pf.Metadata.EventCode)]
+	pluginMetadata := pluginMap[fmt.Sprintf("%s/%s", resourceGroup, event)]
 	r := pluginMetadata.Recommend
 	if r.Risk == "" && r.Recommendation == "" {
 		s.logger.Warnf(ctx, "Failed to get recommendation, Unknown plugin=%s", event)

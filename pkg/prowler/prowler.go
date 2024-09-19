@@ -39,21 +39,16 @@ func (c *ProwlerClient) run(ctx context.Context, subscription_id string) (*[]pro
 	unixNano := time.Now().UnixNano()
 
 	// Exec Prowler
-	result, resultJSON, err := c.execProwler(ctx, subscription_id, unixNano)
+	result, err := c.execProwler(ctx, subscription_id, unixNano)
 	if err != nil {
 		c.logger.Errorf(ctx, "Failed to exec azure, subscription_id=%s, err=%+v", subscription_id, err)
 		return nil, err
 	}
 
-	// Remove temp files
-	if err = c.removeTempFiles(resultJSON); err != nil {
-		c.logger.Errorf(ctx, "Failed to remove temp files, subscription_id=%s, err=%+v", subscription_id, err)
-		return nil, err
-	}
 	return result, nil
 }
 
-func (c *ProwlerClient) execProwler(ctx context.Context, subscription_id string, unixNano int64) (*[]prowlerFinding, string, error) {
+func (c *ProwlerClient) execProwler(ctx context.Context, subscription_id string, unixNano int64) (*[]prowlerFinding, error) {
 	output := fmt.Sprintf("/tmp/%s_%d_result", subscription_id, unixNano)
 	fileName := fmt.Sprintf("%s.ocsf.json", subscription_id)
 	outputJson := output + "/" + fileName
@@ -66,27 +61,32 @@ func (c *ProwlerClient) execProwler(ctx context.Context, subscription_id string,
 	cmd.Stderr = &stderr
 	err := cmd.Run()
 	if err != nil {
-		return nil, "", fmt.Errorf("failed exec azure. error: %+v, detail: %s", err, stderr.String())
+		return nil, fmt.Errorf("failed exec azure. error: %+v, detail: %s", err, stderr.String())
 	}
 	resultFile, err := os.Open(outputJson)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to open result file. file: %s, error: %+v", outputJson, err)
+		return nil, fmt.Errorf("failed to open result file. file: %s, error: %+v", outputJson, err)
 	}
 	defer resultFile.Close()
 	buf, err := io.ReadAll(resultFile)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 	c.logger.Debugf(ctx, "Result file Length: %d", len(buf))
 
 	var findings []prowlerFinding
 	if len(buf) == 0 {
-		return &findings, outputJson, nil // empty
+		return &findings, nil // empty
 	}
 	if err := json.Unmarshal(buf, &findings); err != nil {
-		return nil, "", fmt.Errorf("failed parse result JSON. file: %s, error: %+v", outputJson, err)
+		return nil, fmt.Errorf("failed parse result JSON. file: %s, error: %+v", outputJson, err)
 	}
-	return &findings, outputJson, nil
+
+	// Remove temp files
+	if err = c.removeTempFiles(outputJson); err != nil {
+		return nil, fmt.Errorf("failed to remove temp files. error: %w", err)
+	}
+	return &findings, nil
 }
 
 func (c *ProwlerClient) removeTempFiles(resutlFilePath string) error {

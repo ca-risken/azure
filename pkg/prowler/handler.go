@@ -68,7 +68,7 @@ func (s *SqsHandler) HandleMessage(ctx context.Context, sqsMsg *types.Message) e
 	s.logger.Infof(ctx, "end getRelAzureDataSource, RequestID=%s", requestID)
 	scanStatus := common.InitScanStatus(relAzureDataSource)
 
-	// Get cloud sploit
+	// Get Prowler
 	s.logger.Infof(ctx, "start Run prowler, RequestID=%s", requestID)
 	tspan, tctx := tracer.StartSpanFromContext(ctx, "runProwler")
 	result, err := s.prowler.run(tctx, relAzureDataSource.SubscriptionId)
@@ -83,17 +83,9 @@ func (s *SqsHandler) HandleMessage(ctx context.Context, sqsMsg *types.Message) e
 	}
 	s.logger.Infof(ctx, "start put finding, RequestID=%s", requestID)
 
-	resourceButch, findingBatch, err := s.makeFindingBatchForUpsert(ctx, msg.ProjectID, relAzureDataSource.SubscriptionId, result)
+	err = s.makeFindingBatchForUpsert(ctx, msg.ProjectID, relAzureDataSource.SubscriptionId, result)
 	if err != nil {
 		err = fmt.Errorf("failed to make finding batch: project_id=%d, azure_id=%d, azure_data_source_id=%d, err=%w",
-			msg.ProjectID, msg.AzureID, msg.AzureDataSourceID, err)
-		s.logger.Error(ctx, err)
-		s.updateStatusToError(ctx, scanStatus, err)
-		return mimosasqs.WrapNonRetryable(err)
-	}
-	err = s.putFindings(ctx, msg.ProjectID, resourceButch, findingBatch)
-	if err != nil {
-		err = fmt.Errorf("failed to put findings: project_id=%d, azure_id=%d, azure_data_source_id=%d, err=%w",
 			msg.ProjectID, msg.AzureID, msg.AzureDataSourceID, err)
 		s.logger.Error(ctx, err)
 		s.updateStatusToError(ctx, scanStatus, err)
