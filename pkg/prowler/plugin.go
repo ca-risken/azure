@@ -664,7 +664,7 @@ var pluginMap = map[string]pluginMetaData{
 			Recommendation: "1. Navigate to the Monitor blade. 2. Select Alerts. 3. Select Create. 4. Select Alert rule. 5. Under Filter by subscription, choose a subscription. 6. Under Filter by resource type, select Policy assignment (policyAssignments). 7. Under Filter by location, select All. 8. From the results, select the subscription. 9. Select Done. 10. Select the Condition tab. 11. Under Signal name, click Create policy assignment (Microsoft.Authorization/policyAssignments). 12. Select the Actions tab. 13. To use an existing action group, click elect action groups. To create a new action group, click Create action group. Fill out the appropriate details for the selection. 14. Select the Details tab. 15. Select a Resource group, provide an Alert rule name and an optional Alert rule description. 16. Click Review + create. 17. Click Create.\n- https://docs.microsoft.com/en-in/azure/azure-monitor/platform/alerts-activity-log",
 		},
 	},
-	CategoryMonitor + "/monitor_alert_create_update_policy_assignment": {
+	CategoryMonitor + "/monitor_alert_create_update_nsg": {
 		Score: scoreHigh,
 		Tag:   []string{"Monitor"},
 		Recommend: recommend{
