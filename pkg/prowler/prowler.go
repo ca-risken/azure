@@ -82,15 +82,15 @@ func (c *ProwlerClient) execProwler(ctx context.Context, subscription_id string,
 		return nil, fmt.Errorf("failed parse result JSON. file: %s, error: %+v", outputJson, err)
 	}
 
-	// Remove temp files
-	if err = c.removeTempFiles(outputJson); err != nil {
+	// Remove temp dir
+	if err = c.removeTempDir(output); err != nil {
 		return nil, fmt.Errorf("failed to remove temp files. error: %w", err)
 	}
 	return &findings, nil
 }
 
-func (c *ProwlerClient) removeTempFiles(resutlFilePath string) error {
-	if err := os.Remove(resutlFilePath); err != nil {
+func (c *ProwlerClient) removeTempDir(resutlFilePath string) error {
+	if err := os.RemoveAll(resutlFilePath); err != nil {
 		return err
 	}
 	return nil
