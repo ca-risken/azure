@@ -8,38 +8,31 @@ import (
 	"path/filepath"
 )
 
-func getPluginMap() map[string]string {
-	m := make(map[string]string)
-	m["aks"] = "CategoryAKS"
-	m["app"] = "CategoryApp"
-	m["appinsights"] = "CategoryAppInsights"
-	m["cosmosdb"] = "CategoryCosmosDB"
-	m["defender"] = "CategoryDefender"
-	m["entra"] = "CategoryEntra"
-	m["iam"] = "CategoryIAM"
-	m["keyvault"] = "CategoryKeyVault"
-	m["monitor"] = "CategoryMonitor"
-	m["mysql"] = "CategoryMySQL"
-	m["network"] = "CategoryNetwork"
-	m["policy"] = "CategoryPolicy"
-	m["postgresql"] = "CategoryPostgreSQL"
-	m["sqlserver"] = "CategorySQLServer"
-	m["storage"] = "CategoryStorage"
-	m["vm"] = "CategoryVM"
-	return m
+var pluginMap = map[string]string{
+	"aks":         "CategoryAKS",
+	"app":         "CategoryApp",
+	"appinsights": "CategoryAppInsights",
+	"cosmosdb":    "CategoryCosmosDB",
+	"defender":    "CategoryDefender",
+	"entra":       "CategoryEntra",
+	"iam":         "CategoryIAM",
+	"keyvault":    "CategoryKeyVault",
+	"monitor":     "CategoryMonitor",
+	"mysql":       "CategoryMySQL",
+	"network":     "CategoryNetwork",
+	"policy":      "CategoryPolicy",
+	"postgresql":  "CategoryPostgreSQL",
+	"sqlserver":   "CategorySQLServer",
+	"storage":     "CategoryStorage",
+	"vm":          "CategoryVM",
 }
 
-func getScoreMap() map[string]string {
-	m := make(map[string]string)
-	m["critical"] = "scoreCritical"
-	m["high"] = "scoreHigh"
-	m["medium"] = "scoreMedium"
-	m["low"] = "scoreLow"
-	return m
+var scoreMap = map[string]string{
+	"critical": "scoreCritical",
+	"high":     "scoreHigh",
+	"medium":   "scoreMedium",
+	"low":      "scoreLow",
 }
-
-var pluginMap = getPluginMap()
-var scoreMap = getScoreMap()
 
 type Plugin struct {
 	CheckID        string            `json:"CheckID"`
