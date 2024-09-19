@@ -83,7 +83,7 @@ func (s *SqsHandler) HandleMessage(ctx context.Context, sqsMsg *types.Message) e
 	}
 	s.logger.Infof(ctx, "start put finding, RequestID=%s", requestID)
 
-	err = s.makeFindingBatchForUpsert(ctx, msg.ProjectID, relAzureDataSource.SubscriptionId, result)
+	err = s.putResults(ctx, msg.ProjectID, relAzureDataSource.SubscriptionId, result)
 	if err != nil {
 		err = fmt.Errorf("failed to make finding batch: project_id=%d, azure_id=%d, azure_data_source_id=%d, err=%w",
 			msg.ProjectID, msg.AzureID, msg.AzureDataSourceID, err)

@@ -51,7 +51,7 @@ type prowlerRemediation struct {
 	References []string `json:"references"`
 }
 
-func (s *SqsHandler) makeFindingBatchForUpsert(ctx context.Context, projectID uint32, subscriptionID string, prowlerFindings *[]prowlerFinding) error {
+func (s *SqsHandler) putResults(ctx context.Context, projectID uint32, subscriptionID string, prowlerFindings *[]prowlerFinding) error {
 	var resourceBatch []*finding.ResourceBatchForUpsert
 	var findingBatch []*finding.FindingBatchForUpsert
 	for _, pf := range *prowlerFindings {
