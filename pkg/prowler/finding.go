@@ -22,7 +22,7 @@ type prowlerFinding struct {
 	StatusDetail string             `json:"status_detail"`
 	Severity     string             `json:"severity"`
 	StatusCode   string             `json:"status_code"`
-	Tags         *[]string          `json:"tags,omitempty"`
+	Tags         []string           `json:"tags,omitempty"`
 }
 
 type prowlerMetadata struct {
@@ -113,8 +113,7 @@ func (s *SqsHandler) makeFinding(ctx context.Context, projectID uint32, subscrip
 	region := s.getResourceRegion(ctx, *pf)
 	buf, err := json.Marshal(pf)
 	if err != nil {
-		s.logger.Errorf(ctx, "Failed to marshal user data, project_id=%d, resource=%s, err=%+v", projectID, resourceUID, err)
-		return nil, err
+		return nil, fmt.Errorf("failed to marshal user data, project_id=%d, resource=%s, err=%w", projectID, resourceUID, err)
 	}
 	dataSourceID := generateDataSourceID(subscriptionID, pf.Metadata.EventCode, region, resourceUID)
 	f := &finding.FindingBatchForUpsert{
@@ -135,6 +134,10 @@ func (s *SqsHandler) makeFinding(ctx context.Context, projectID uint32, subscrip
 		{Tag: strings.ToLower(groupName)},
 		{Tag: subscriptionID},
 		{Tag: pf.Metadata.EventCode},
+	}
+	findingTags := pf.getTag(groupName)
+	for _, tag := range findingTags {
+		tags = append(tags, &finding.FindingTagForBatch{Tag: tag})
 	}
 	f.Tag = tags
 	f.Recommend = s.getRecommend(ctx, pf, groupName)
@@ -181,6 +184,14 @@ func (f *prowlerFinding) getScore(resourceGroup string) float32 {
 		}
 		return 0.3
 	}
+}
+
+func (f *prowlerFinding) getTag(resourceGroup string) []string {
+	cat := fmt.Sprintf("%s/%s", resourceGroup, f.Metadata.EventCode)
+	if plugin, ok := pluginMap[cat]; ok {
+		return plugin.Tag
+	}
+	return []string{}
 }
 
 func (s *SqsHandler) getResourceUID(ctx context.Context, f prowlerFinding) string {

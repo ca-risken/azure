@@ -61,8 +61,11 @@ type pluginRecommendation struct {
 }
 
 func main() {
-	// Prowlerのディレクトリを指定
-	rootDir := "/Users/a14958/prowler/prowler/providers/azure/services"
+	// argからProwlerのディレクトリを取得
+	if len(os.Args) != 2 {
+		log.Fatalf("Usage: %s <prowler directory>", os.Args[0])
+	}
+	rootDir := os.Args[1]
 
 	// jsonファイルのパスを格納するスライス
 	var jsonFiles []string
@@ -121,14 +124,14 @@ func getPluginCategory(serviceName string) string {
 }
 
 func getTags(subServiceName, resourceType string) string {
-	if subServiceName == "" && resourceType == "" {
-		return ""
-	} else if subServiceName == "" && resourceType != "" {
-		return fmt.Sprintf(`"%s"`, resourceType)
-	} else if subServiceName != "" && resourceType == "" {
-		return fmt.Sprintf(`"%s"`, subServiceName)
+	if subServiceName != "" && resourceType != "" {
+		return fmt.Sprintf(`"%s", "%s"`, subServiceName, resourceType) // 両方あり
+	} else if resourceType != "" {
+		return fmt.Sprintf(`"%s"`, resourceType) // 片方あり①
+	} else if subServiceName != "" {
+		return fmt.Sprintf(`"%s"`, subServiceName) // 片方あり②
 	}
-	return fmt.Sprintf(`"%s", "%s"`, subServiceName, resourceType)
+	return "" // 両方なし
 }
 
 func getScore(severity string) string {
