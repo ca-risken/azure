@@ -75,11 +75,14 @@ func (c *ProwlerClient) execProwler(ctx context.Context, subscription_id string,
 	c.logger.Debugf(ctx, "Result file Length: %d", len(buf))
 
 	var findings []prowlerFinding
-	if len(buf) == 0 {
-		return &findings, nil // empty
-	}
-	if err := json.Unmarshal(buf, &findings); err != nil {
-		return nil, fmt.Errorf("failed parse result JSON. file: %s, error: %+v", outputJson, err)
+	if len(buf) != 0 {
+		if err := json.Unmarshal(buf, &findings); err != nil {
+			errRemove := c.removeTempDir(output)
+			if errRemove != nil {
+				c.logger.Warnf(ctx, "Failed to remove temp files. error: %w", errRemove)
+			}
+			return nil, fmt.Errorf("failed parse result JSON. file: %s, error: %+v", outputJson, err)
+		}
 	}
 
 	// Remove temp dir
