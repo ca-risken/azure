@@ -36,16 +36,7 @@ func NewProwlerClient(l logging.Logger, command, azureClientID, azureTenantID, a
 }
 
 func (c *ProwlerClient) run(ctx context.Context, subscription_id string) (*[]prowlerFinding, error) {
-	unixNano := time.Now().UnixNano()
-
-	// Exec Prowler
-	result, err := c.execProwler(ctx, subscription_id, unixNano)
-	if err != nil {
-		c.logger.Errorf(ctx, "Failed to exec azure, subscription_id=%s, err=%+v", subscription_id, err)
-		return nil, err
-	}
-
-	return result, nil
+	return c.execProwler(ctx, subscription_id, time.Now().UnixNano())
 }
 
 func (c *ProwlerClient) execProwler(ctx context.Context, subscription_id string, unixNano int64) (*[]prowlerFinding, error) {
@@ -75,7 +66,7 @@ func (c *ProwlerClient) execProwler(ctx context.Context, subscription_id string,
 	c.logger.Debugf(ctx, "Result file Length: %d", len(buf))
 
 	var findings []prowlerFinding
-	if len(buf) != 0 {
+	if len(buf) > 0 {
 		if err := json.Unmarshal(buf, &findings); err != nil {
 			errRemove := c.removeTempDir(output)
 			if errRemove != nil {

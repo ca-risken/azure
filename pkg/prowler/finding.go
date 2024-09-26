@@ -64,6 +64,7 @@ func (s *SqsHandler) putResults(ctx context.Context, projectID uint32, subscript
 		score := pf.getScore(groupName)
 		if score == 0.0 {
 			resourceBatch = append(resourceBatch, makeResource(projectID, resourceUID, subscriptionID, groupName))
+			continue
 		}
 		f, err := s.makeFinding(ctx, projectID, subscriptionID, resourceUID, groupName, score, &pf)
 		if err != nil {
@@ -146,6 +147,9 @@ func (s *SqsHandler) makeFinding(ctx context.Context, projectID uint32, subscrip
 }
 
 func shorten(s string, n int) string {
+	if n < 4 {
+		n = 4
+	}
 	if len(s) <= n {
 		return s
 	}
