@@ -8,13 +8,12 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"time"
 
 	"github.com/ca-risken/common/pkg/logging"
 )
 
 type prowlerServiceClient interface {
-	run(ctx context.Context, subscription_id string) (*[]prowlerFinding, error)
+	run(ctx context.Context, subscription_id string, unixTime int64) (*[]prowlerFinding, error)
 }
 
 type ProwlerClient struct {
@@ -35,11 +34,7 @@ func NewProwlerClient(l logging.Logger, command, azureClientID, azureTenantID, a
 	}
 }
 
-func (c *ProwlerClient) run(ctx context.Context, subscription_id string) (*[]prowlerFinding, error) {
-	return c.execProwler(ctx, subscription_id, time.Now().UnixNano())
-}
-
-func (c *ProwlerClient) execProwler(ctx context.Context, subscription_id string, unixNano int64) (*[]prowlerFinding, error) {
+func (c *ProwlerClient) run(ctx context.Context, subscription_id string, unixNano int64) (*[]prowlerFinding, error) {
 	output := fmt.Sprintf("/tmp/%s_%d_result", subscription_id, unixNano)
 	fileName := fmt.Sprintf("%s.ocsf.json", subscription_id)
 	outputJson := output + "/" + fileName

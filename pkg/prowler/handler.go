@@ -71,7 +71,7 @@ func (s *SqsHandler) HandleMessage(ctx context.Context, sqsMsg *types.Message) e
 	// Get Prowler
 	s.logger.Infof(ctx, "start Run prowler, RequestID=%s", requestID)
 	tspan, tctx := tracer.StartSpanFromContext(ctx, "runProwler")
-	result, err := s.prowler.run(tctx, relAzureDataSource.SubscriptionId)
+	result, err := s.prowler.run(tctx, relAzureDataSource.SubscriptionId, time.Now().UnixNano())
 	tspan.Finish(tracer.WithError(err))
 	s.logger.Infof(ctx, "end Run prowler, RequestID=%s", requestID)
 	if err != nil {

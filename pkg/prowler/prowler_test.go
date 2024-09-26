@@ -13,7 +13,7 @@ import (
 
 const unixNano = int64(999999999)
 
-func TestExecProwler(t *testing.T) {
+func TestRun(t *testing.T) {
 	testClient := &ProwlerClient{
 		ProwlerCommand: "echo",
 		logger:         logging.NewLogger(),
@@ -43,7 +43,7 @@ func TestExecProwler(t *testing.T) {
 			ctx := context.Background()
 			// create test result file
 			createTempFile(c.input, unixNano, c.fileDesc)
-			got, err := testClient.execProwler(ctx, c.input, unixNano)
+			got, err := testClient.run(ctx, c.input, unixNano)
 			if (c.wantErr && err == nil) || (!c.wantErr && err != nil) {
 				t.Fatalf("Unexpected error: wantErr=%t, err=%+v", c.wantErr, err)
 			}
