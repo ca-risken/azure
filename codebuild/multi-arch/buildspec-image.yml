@@ -8,6 +8,10 @@ env:
     DOCKER_TOKEN: "/build/DOCKER_TOKEN"
 
 phases:
+  install:
+    runtime-versions:
+    # https://docs.aws.amazon.com/codebuild/latest/userguide/runtime-versions.html
+    golang: 1.22
   pre_build:
     commands:
       - echo Setting environment variables
@@ -15,7 +19,6 @@ phases:
       - TAG=$(git rev-parse --short HEAD)_${OS}_${ARCH}
       - AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query 'Account' --output text)
       - REGISTRY=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com
-      - sh codebuild/multi-arch/install-go.sh
       - go version
 
       - echo Logging in to Amazon ECR...
