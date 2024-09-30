@@ -111,7 +111,7 @@ func main() {
 	if err != nil {
 		appLogger.Fatalf(ctx, "Failed to create azure client, err=%+v", err)
 	}
-	prc := prowler.NewProwlerClient(appLogger, conf.ProwlerCommand, conf.AzureClientID, conf.AzureTenantID, conf.AzureClientSecret)
+	prc := prowler.NewProwlerClient(appLogger, conf.ProwlerCommand)
 	handler := prowler.NewSqsHandler(fc, ac, azc, prc, appLogger)
 
 	sqsConf := &sqs.SQSConfig{
