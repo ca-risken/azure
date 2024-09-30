@@ -17,20 +17,14 @@ type prowlerServiceClient interface {
 }
 
 type ProwlerClient struct {
-	ProwlerCommand    string
-	logger            logging.Logger
-	AzureClientID     string
-	AzureTenantID     string
-	AzureClientSecret string
+	ProwlerCommand string
+	logger         logging.Logger
 }
 
-func NewProwlerClient(l logging.Logger, command, azureClientID, azureTenantID, azureClientSecret string) prowlerServiceClient {
+func NewProwlerClient(l logging.Logger, command string) prowlerServiceClient {
 	return &ProwlerClient{
-		ProwlerCommand:    command,
-		logger:            l,
-		AzureClientID:     azureClientID,
-		AzureTenantID:     azureTenantID,
-		AzureClientSecret: azureClientSecret,
+		ProwlerCommand: command,
+		logger:         l,
 	}
 }
 

@@ -43,7 +43,7 @@ type AppConfig struct {
 
 	AzureProwlerQueueName string `split_words:"true" default:"azure-prowler"`
 	AzureProwlerQueueURL  string `split_words:"true" default:"http://queue.middleware.svc.cluster.local:9324/queue/azure-prowler"`
-	MaxNumberOfMessage    int32  `split_words:"true" default:"10"`
+	MaxNumberOfMessage    int32  `split_words:"true" default:"1"`
 	WaitTimeSecond        int32  `split_words:"true" default:"20"`
 
 	// grpc
@@ -56,9 +56,7 @@ type AppConfig struct {
 	AzureClientSecret string `required:"true" split_words:"true"`
 
 	// prowler
-	ProwlerCommand        string `split_words:"true" default:"prowler"`
-	ScanExcludePortNumber int    `split_words:"true" default:"1000"`
-	ScanConcurrency       int64  `split_words:"true" default:"5"`
+	ProwlerCommand string `split_words:"true" default:"prowler"`
 }
 
 func main() {
@@ -111,7 +109,7 @@ func main() {
 	if err != nil {
 		appLogger.Fatalf(ctx, "Failed to create azure client, err=%+v", err)
 	}
-	prc := prowler.NewProwlerClient(appLogger, conf.ProwlerCommand, conf.AzureClientID, conf.AzureTenantID, conf.AzureClientSecret)
+	prc := prowler.NewProwlerClient(appLogger, conf.ProwlerCommand)
 	handler := prowler.NewSqsHandler(fc, ac, azc, prc, appLogger)
 
 	sqsConf := &sqs.SQSConfig{
