@@ -176,17 +176,38 @@ func generateDataSourceID(subscriptionID, event, region, resource string) string
 	return hex.EncodeToString(hash[:])
 }
 
+const (
+	severityCritical = "Critical"
+	severityHigh     = "High"
+	severityMedium   = "Medium"
+	severityLow      = "Low"
+	scoreCritical    = 0.8
+	scoreHigh        = 0.6
+	scoreMedium      = 0.4
+	scoreLow         = 0.3
+	scoreInfo        = 0.1
+)
+
 func (f *prowlerFinding) getScore(resourceGroup string) float32 {
-	cat := fmt.Sprintf("%s/%s", resourceGroup, f.Metadata.EventCode)
-	switch strings.ToUpper(f.StatusCode) {
-	case resultPASS:
+	if f.StatusCode == resultPASS {
 		return 0.0
+	}
+	// FAIL
+	cat := fmt.Sprintf("%s/%s", resourceGroup, f.Metadata.EventCode)
+	if plugin, ok := pluginMap[cat]; ok && plugin.Score != 0.0 {
+		return plugin.Score
+	}
+	switch f.Severity {
+	case severityCritical:
+		return scoreCritical
+	case severityHigh:
+		return scoreHigh
+	case severityMedium:
+		return scoreMedium
+	case severityLow:
+		return scoreLow
 	default:
-		// FAIL
-		if plugin, ok := pluginMap[cat]; ok {
-			return plugin.Score
-		}
-		return 0.3
+		return scoreLow
 	}
 }
 

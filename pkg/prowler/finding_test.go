@@ -192,6 +192,7 @@ func TestGetScore(t *testing.T) {
 					Metadata: prowlerMetadata{
 						EventCode: "sqlserver_unrestricted_inbound_access",
 					},
+					Severity:   severityCritical,
 					StatusCode: resultFAIL,
 				},
 				resourceGroup: CategorySQLServer,
@@ -205,6 +206,7 @@ func TestGetScore(t *testing.T) {
 					Metadata: prowlerMetadata{
 						EventCode: "aks_clusters_created_with_private_nodes",
 					},
+					Severity:   severityHigh,
 					StatusCode: resultFAIL,
 				},
 				resourceGroup: CategoryAKS,
@@ -218,6 +220,7 @@ func TestGetScore(t *testing.T) {
 					Metadata: prowlerMetadata{
 						EventCode: "aks_cluster_rbac_enabled",
 					},
+					Severity:   severityMedium,
 					StatusCode: resultFAIL,
 				},
 				resourceGroup: CategoryAKS,
@@ -231,6 +234,7 @@ func TestGetScore(t *testing.T) {
 					Metadata: prowlerMetadata{
 						EventCode: "app_ensure_java_version_is_latest",
 					},
+					Severity:   severityLow,
 					StatusCode: resultFAIL,
 				},
 				resourceGroup: CategoryApp,
@@ -244,11 +248,25 @@ func TestGetScore(t *testing.T) {
 					Metadata: prowlerMetadata{
 						EventCode: "app_ensure_java_version_is_latest",
 					},
+					Severity:   severityCritical,
 					StatusCode: resultPASS,
 				},
 				resourceGroup: CategoryApp,
 			},
 			want: 0.0,
+		},
+		{
+			name: "plugin has score",
+			input: args{
+				pf: &prowlerFinding{
+					Metadata: prowlerMetadata{
+						EventCode: "/entra_conditional_access_policy_require_mfa_for_management_api",
+					},
+					StatusCode: resultFAIL,
+				},
+				resourceGroup: CategoryEntra,
+			},
+			want: 0.3,
 		},
 		{
 			name: "plugin not found",
