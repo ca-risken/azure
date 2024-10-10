@@ -1,6 +1,6 @@
 module github.com/ca-risken/azure
 
-go 1.23.1
+go 1.22.0
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.18.1
@@ -8,7 +8,7 @@ require (
 	github.com/ca-risken/common/pkg/grpc_client v0.0.0-20231115120457-29329218bd9e
 	github.com/ca-risken/common/pkg/logging v0.0.0-20220601065422-5b97bd6efc9b
 	github.com/ca-risken/common/pkg/profiler v0.0.0-20220601065422-5b97bd6efc9b
-	github.com/ca-risken/common/pkg/prowler v0.0.0-20241007105253-44d6fdd4e8c7
+	github.com/ca-risken/common/pkg/prowler v0.0.0-20241010135630-763c7082524a
 	github.com/ca-risken/common/pkg/sqs v0.0.0-20231115120457-29329218bd9e
 	github.com/ca-risken/common/pkg/tracer v0.0.0-20230727031236-b35703d5c59d
 	github.com/ca-risken/core v0.8.1-0.20230802005225-c9bcfdb2579c

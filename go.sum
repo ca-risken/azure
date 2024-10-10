@@ -59,8 +59,8 @@ github.com/ca-risken/common/pkg/logging v0.0.0-20220601065422-5b97bd6efc9b h1:qN
 github.com/ca-risken/common/pkg/logging v0.0.0-20220601065422-5b97bd6efc9b/go.mod h1:iqLbvDuf708TWjF8RO5qw6Nx1e3R0/UEHZ8tE/VEPjA=
 github.com/ca-risken/common/pkg/profiler v0.0.0-20220601065422-5b97bd6efc9b h1:S3vrpeI7invfVyBw0PhZ15/A/kIV9AOPTXpc+e7RQdU=
 github.com/ca-risken/common/pkg/profiler v0.0.0-20220601065422-5b97bd6efc9b/go.mod h1:xldq3VZ7qomkI5vfpw8Y9qCVEFl8BrSvDr+sxbz32H4=
-github.com/ca-risken/common/pkg/prowler v0.0.0-20241007105253-44d6fdd4e8c7 h1:wyZN8Dakn1/TGs5dy6JIP/qUBHWmbW1rg4asDTwPnh0=
-github.com/ca-risken/common/pkg/prowler v0.0.0-20241007105253-44d6fdd4e8c7/go.mod h1:sOBXiPTBg7ivB90a8fUudl72fuKnHpb1IAHWnPqvOB0=
+github.com/ca-risken/common/pkg/prowler v0.0.0-20241010135630-763c7082524a h1:8QdwI6hVFAICDQXW6paIUuOEbn2gAtwpL68WWbv1UJ4=
+github.com/ca-risken/common/pkg/prowler v0.0.0-20241010135630-763c7082524a/go.mod h1:56qAPZ7OXP0VyGxrlIt7ntswHN8aJvbVzcU4N1Eka8o=
 github.com/ca-risken/common/pkg/sqs v0.0.0-20231115120457-29329218bd9e h1:tXhmORRjSCBJ/R28i8w7XyH0F2rVvWSJ3h0RlwiWZsw=
 github.com/ca-risken/common/pkg/sqs v0.0.0-20231115120457-29329218bd9e/go.mod h1:Nvq5byox8//RuVTdMRJ98zbX7EexilsV7H8p9CdCJUw=
 github.com/ca-risken/common/pkg/tracer v0.0.0-20230727031236-b35703d5c59d h1:d+QWOmwmL2YjVWmTlbabmhdCSTnDuiJWxSf8siQbSrM=
