@@ -61,7 +61,7 @@ func (s *SqsHandler) putResults(ctx context.Context, projectID uint32, subscript
 			continue
 		}
 		groupName := s.getResourceGroupName(ctx, pf)
-		score := pf.getScore(groupName)
+		score := s.getScore(groupName, &pf)
 		if score == 0.0 {
 			resourceBatch = append(resourceBatch, makeResource(projectID, resourceUID, subscriptionID, groupName))
 			continue
@@ -136,7 +136,7 @@ func (s *SqsHandler) makeFinding(ctx context.Context, projectID uint32, subscrip
 		{Tag: subscriptionID},
 		{Tag: pf.Metadata.EventCode},
 	}
-	findingTags := pf.getTag(groupName)
+	findingTags := s.getTag(groupName, pf)
 	for _, tag := range findingTags {
 		tags = append(tags, &finding.FindingTagForBatch{Tag: tag})
 	}
@@ -158,16 +158,20 @@ func shorten(s string, n int) string {
 
 func (s *SqsHandler) getRecommend(ctx context.Context, pf *prowlerFinding, resourceGroup string) *finding.RecommendForBatch {
 	event := pf.Metadata.EventCode
-	pluginMetadata := pluginMap[fmt.Sprintf("%s/%s", resourceGroup, event)]
-	r := pluginMetadata.Recommend
-	if r.Risk == "" && r.Recommendation == "" {
+	cat := fmt.Sprintf("%s/%s", resourceGroup, event)
+	pluginMetadata, ok := s.prolwerSetting.SpecificPluginSetting[cat]
+	if !ok {
+		s.logger.Warnf(ctx, "Failed to get recommendation, Unknown plugin=%s", event)
+		return nil
+	}
+	if pluginMetadata.Recommend.Risk == nil || pluginMetadata.Recommend.Recommendation == nil {
 		s.logger.Warnf(ctx, "Failed to get recommendation, Unknown plugin=%s", event)
 		return nil
 	}
 	return &finding.RecommendForBatch{
 		Type:           event,
-		Risk:           r.Risk,
-		Recommendation: r.Recommendation,
+		Risk:           *pluginMetadata.Recommend.Risk,
+		Recommendation: *pluginMetadata.Recommend.Recommendation,
 	}
 }
 
@@ -188,14 +192,14 @@ const (
 	scoreInfo        = 0.1
 )
 
-func (f *prowlerFinding) getScore(resourceGroup string) float32 {
+func (s *SqsHandler) getScore(resourceGroup string, f *prowlerFinding) float32 {
 	if f.StatusCode == resultPASS {
 		return 0.0
 	}
 	// FAIL
 	cat := fmt.Sprintf("%s/%s", resourceGroup, f.Metadata.EventCode)
-	if plugin, ok := pluginMap[cat]; ok && plugin.Score != 0.0 {
-		return plugin.Score
+	if plugin, ok := s.prolwerSetting.SpecificPluginSetting[cat]; ok && plugin.Score != nil {
+		return *plugin.Score
 	}
 	switch f.Severity {
 	case severityCritical:
@@ -211,10 +215,10 @@ func (f *prowlerFinding) getScore(resourceGroup string) float32 {
 	}
 }
 
-func (f *prowlerFinding) getTag(resourceGroup string) []string {
+func (s *SqsHandler) getTag(resourceGroup string, f *prowlerFinding) []string {
 	cat := fmt.Sprintf("%s/%s", resourceGroup, f.Metadata.EventCode)
-	if plugin, ok := pluginMap[cat]; ok {
-		return plugin.Tag
+	if plugin, ok := s.prolwerSetting.SpecificPluginSetting[cat]; ok {
+		return plugin.Tags
 	}
 	return []string{}
 }

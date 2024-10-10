@@ -56,7 +56,8 @@ type AppConfig struct {
 	AzureClientSecret string `required:"true" split_words:"true"`
 
 	// prowler
-	ProwlerCommand string `split_words:"true" default:"prowler"`
+	ProwlerCommand     string `split_words:"true" default:"prowler"`
+	ProwlerSettingPath string `split_words:"true" default:""`
 }
 
 func main() {
@@ -110,7 +111,10 @@ func main() {
 		appLogger.Fatalf(ctx, "Failed to create azure client, err=%+v", err)
 	}
 	prc := prowler.NewProwlerClient(appLogger, conf.ProwlerCommand)
-	handler := prowler.NewSqsHandler(fc, ac, azc, prc, appLogger)
+	handler, err := prowler.NewSqsHandler(fc, ac, azc, prc, conf.ProwlerSettingPath, appLogger)
+	if err != nil {
+		appLogger.Fatalf(ctx, "Failed to create SQS handler, err=%+v", err)
+	}
 
 	sqsConf := &sqs.SQSConfig{
 		Debug:              conf.Debug,

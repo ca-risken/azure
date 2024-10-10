@@ -10,6 +10,20 @@ import (
 	"github.com/ca-risken/core/proto/finding"
 )
 
+var testHandler *SqsHandler
+
+func init() {
+	logger := logging.NewLogger()
+	setting, err := loadProwlerSetting("")
+	if err != nil {
+		logger.Fatalf(context.Background(), "Failed to load prowler setting: err=%+v", err)
+	}
+	testHandler = &SqsHandler{
+		logger:         logger,
+		prolwerSetting: setting,
+	}
+}
+
 func TestMakeResource(t *testing.T) {
 	type args struct {
 		projectID      uint32
@@ -108,11 +122,8 @@ func TestMakeFinding(t *testing.T) {
 		},
 	}
 	for _, c := range cases {
-		s := &SqsHandler{
-			logger: logging.NewLogger(),
-		}
 		t.Run(c.name, func(t *testing.T) {
-			got, err := s.makeFinding(ctx, c.input.projectID, c.input.subscriptionID, c.input.resourceUID, c.input.groupName, c.input.score, c.input.pf)
+			got, err := testHandler.makeFinding(ctx, c.input.projectID, c.input.subscriptionID, c.input.resourceUID, c.input.groupName, c.input.score, c.input.pf)
 			if c.wantErr && err == nil {
 				t.Fatalf("Expected error but got nil")
 			}
@@ -142,11 +153,11 @@ func TestGetRecommend(t *testing.T) {
 						EventCode: "aks_cluster_rbac_enabled",
 					},
 				},
-				resourceGroup: CategoryAKS,
+				resourceGroup: "aks",
 			},
 			want: &finding.RecommendForBatch{
-				Risk:           "Kubernetes RBAC and AKS help you secure your cluster access and provide only the minimum required permissions to developers and operators.",
-				Recommendation: "https://learn.microsoft.com/en-us/security/benchmark/azure/security-controls-v2-privileged-access#pa-7-follow-just-enough-administration-least-privilege-principle",
+				Risk:           "Ensure AKS RBAC is enabled\n- Kubernetes RBAC and AKS help you secure your cluster access and provide only the minimum required permissions to developers and operators.",
+				Recommendation: "- https://learn.microsoft.com/en-us/security/benchmark/azure/security-controls-v2-privileged-access#pa-7-follow-just-enough-administration-least-privilege-principle",
 				Type:           "aks_cluster_rbac_enabled",
 			},
 		},
@@ -158,17 +169,14 @@ func TestGetRecommend(t *testing.T) {
 						EventCode: "not_found",
 					},
 				},
-				resourceGroup: CategoryAKS,
+				resourceGroup: "aks",
 			},
 			want: nil,
 		},
 	}
 	for _, c := range cases {
-		s := &SqsHandler{
-			logger: logging.NewLogger(),
-		}
 		t.Run(c.name, func(t *testing.T) {
-			got := s.getRecommend(ctx, c.input.pf, c.input.resourceGroup)
+			got := testHandler.getRecommend(ctx, c.input.pf, c.input.resourceGroup)
 			if !reflect.DeepEqual(c.want, got) {
 				t.Fatalf("Unexpected data match: want=%+v, got=%+v", c.want, got)
 			}
@@ -195,7 +203,7 @@ func TestGetScore(t *testing.T) {
 					Severity:   severityCritical,
 					StatusCode: resultFAIL,
 				},
-				resourceGroup: CategorySQLServer,
+				resourceGroup: "sqlserver",
 			},
 			want: 0.8,
 		},
@@ -209,7 +217,7 @@ func TestGetScore(t *testing.T) {
 					Severity:   severityHigh,
 					StatusCode: resultFAIL,
 				},
-				resourceGroup: CategoryAKS,
+				resourceGroup: "aks",
 			},
 			want: 0.6,
 		},
@@ -223,7 +231,7 @@ func TestGetScore(t *testing.T) {
 					Severity:   severityMedium,
 					StatusCode: resultFAIL,
 				},
-				resourceGroup: CategoryAKS,
+				resourceGroup: "aks",
 			},
 			want: 0.4,
 		},
@@ -237,7 +245,7 @@ func TestGetScore(t *testing.T) {
 					Severity:   severityLow,
 					StatusCode: resultFAIL,
 				},
-				resourceGroup: CategoryApp,
+				resourceGroup: "app",
 			},
 			want: 0.3,
 		},
@@ -251,7 +259,7 @@ func TestGetScore(t *testing.T) {
 					Severity:   severityCritical,
 					StatusCode: resultPASS,
 				},
-				resourceGroup: CategoryApp,
+				resourceGroup: "app",
 			},
 			want: 0.0,
 		},
@@ -264,7 +272,7 @@ func TestGetScore(t *testing.T) {
 					},
 					StatusCode: resultFAIL,
 				},
-				resourceGroup: CategoryEntra,
+				resourceGroup: "entra",
 			},
 			want: 0.3,
 		},
@@ -277,14 +285,14 @@ func TestGetScore(t *testing.T) {
 					},
 					StatusCode: resultFAIL,
 				},
-				resourceGroup: CategoryApp,
+				resourceGroup: "app",
 			},
 			want: 0.3,
 		},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			got := c.input.pf.getScore(c.input.resourceGroup)
+			got := testHandler.getScore(c.input.resourceGroup, c.input.pf)
 			if !reflect.DeepEqual(c.want, got) {
 				t.Fatalf("Unexpected data match: want=%+v, got=%+v", c.want, got)
 			}
@@ -310,9 +318,9 @@ func TestGetTag(t *testing.T) {
 						EventCode: "aks_cluster_rbac_enabled",
 					},
 				},
-				resourceGroup: CategoryAKS,
+				resourceGroup: "aks",
 			},
-			want: []string{"Microsoft.ContainerService/ManagedClusters"},
+			want: []string{"aks", "Microsoft.ContainerService/ManagedClusters"},
 		},
 		{
 			name: "plugin not found",
@@ -322,14 +330,14 @@ func TestGetTag(t *testing.T) {
 						EventCode: "not_found",
 					},
 				},
-				resourceGroup: CategoryApp,
+				resourceGroup: "app",
 			},
 			want: []string{},
 		},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			got := c.input.pf.getTag(c.input.resourceGroup)
+			got := testHandler.getTag(c.input.resourceGroup, c.input.pf)
 			if !reflect.DeepEqual(c.want, got) {
 				t.Fatalf("Unexpected data match: want=%+v, got=%+v", c.want, got)
 			}
@@ -381,11 +389,8 @@ func TestGetResourceUID(t *testing.T) {
 		},
 	}
 	for _, c := range cases {
-		s := &SqsHandler{
-			logger: logging.NewLogger(),
-		}
 		t.Run(c.name, func(t *testing.T) {
-			got := s.getResourceUID(ctx, c.input)
+			got := testHandler.getResourceUID(ctx, c.input)
 			if !reflect.DeepEqual(c.want, got) {
 				t.Fatalf("Unexpected data match: want=%+v, got=%+v", c.want, got)
 			}
@@ -428,11 +433,8 @@ func TestGetResourceRegion(t *testing.T) {
 		},
 	}
 	for _, c := range cases {
-		s := &SqsHandler{
-			logger: logging.NewLogger(),
-		}
 		t.Run(c.name, func(t *testing.T) {
-			got := s.getResourceRegion(ctx, c.input)
+			got := testHandler.getResourceRegion(ctx, c.input)
 			if !reflect.DeepEqual(c.want, got) {
 				t.Fatalf("Unexpected data match: want=%+v, got=%+v", c.want, got)
 			}
@@ -475,11 +477,8 @@ func TestGetResourceGroupName(t *testing.T) {
 		},
 	}
 	for _, c := range cases {
-		s := &SqsHandler{
-			logger: logging.NewLogger(),
-		}
 		t.Run(c.name, func(t *testing.T) {
-			got := s.getResourceGroupName(ctx, c.input)
+			got := testHandler.getResourceGroupName(ctx, c.input)
 			if !reflect.DeepEqual(c.want, got) {
 				t.Fatalf("Unexpected data match: want=%+v, got=%+v", c.want, got)
 			}
