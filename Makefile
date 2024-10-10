@@ -60,8 +60,12 @@ push-manifest: $(MANIFEST_PUSH_TARGETS)
 go-test:
 	GO111MODULE=on go test ./...
 
+.PHONY generate
+generate:
+	go generate ./...
+
 .PHONY: lint
-lint:
+lint: generate
 	GO111MODULE=on GOFLAGS=-buildvcs=false golangci-lint run --timeout 5m
 
 FAKE:
