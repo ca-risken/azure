@@ -60,7 +60,7 @@ push-manifest: $(MANIFEST_PUSH_TARGETS)
 go-test:
 	GO111MODULE=on go test ./...
 
-.PHONY generate
+.PHONY: generate
 generate:
 	go generate ./...
 
