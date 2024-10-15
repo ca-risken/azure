@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
 	"github.com/ca-risken/azure/pkg/common"
 	"github.com/ca-risken/common/pkg/logging"
+	"github.com/ca-risken/common/pkg/prowler"
 	mimosasqs "github.com/ca-risken/common/pkg/sqs"
 	"github.com/ca-risken/core/proto/alert"
 	"github.com/ca-risken/core/proto/finding"
@@ -18,11 +19,12 @@ import (
 )
 
 type SqsHandler struct {
-	findingClient finding.FindingServiceClient
-	alertClient   alert.AlertServiceClient
-	azureClient   azure.AzureServiceClient
-	prowler       prowlerServiceClient
-	logger        logging.Logger
+	findingClient  finding.FindingServiceClient
+	alertClient    alert.AlertServiceClient
+	azureClient    azure.AzureServiceClient
+	prowler        prowlerServiceClient
+	prolwerSetting *prowler.ProwlerSetting
+	logger         logging.Logger
 }
 
 func NewSqsHandler(
@@ -30,15 +32,22 @@ func NewSqsHandler(
 	ac alert.AlertServiceClient,
 	azc azure.AzureServiceClient,
 	prowler prowlerServiceClient,
+	settingYamlPath string,
 	l logging.Logger,
-) *SqsHandler {
-	return &SqsHandler{
-		findingClient: fc,
-		alertClient:   ac,
-		azureClient:   azc,
-		prowler:       prowler,
-		logger:        l,
+) (*SqsHandler, error) {
+	prowlerSetting, err := loadProwlerSetting(settingYamlPath)
+	if err != nil {
+		l.Errorf(context.Background(), "Failed to load prowler setting: err=%+v", err)
+		return nil, err
 	}
+	return &SqsHandler{
+		findingClient:  fc,
+		alertClient:    ac,
+		azureClient:    azc,
+		prowler:        prowler,
+		prolwerSetting: prowlerSetting,
+		logger:         l,
+	}, nil
 }
 
 func (s *SqsHandler) HandleMessage(ctx context.Context, sqsMsg *types.Message) error {
